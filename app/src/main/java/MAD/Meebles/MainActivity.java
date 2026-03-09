@@ -1,6 +1,10 @@
 package MAD.Meebles;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,5 +26,25 @@ public class MainActivity extends AppCompatActivity {
         });
 
         System.out.println("Hello World");
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        final int id = item.getItemId();
+        if (id == R.id.pickupDropPage) {
+            Intent i = new Intent(getApplicationContext(), ScanActivity.class);
+            startActivity(i);
+        } else {
+            // system will handle if none were clicked
+            return super.onOptionsItemSelected(item);
+        }
+
+        // menu item has been handled
+        return true;
     }
 }
