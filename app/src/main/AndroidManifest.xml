@@ -12,6 +12,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Meebles">
         <activity
+            android:name=".NfcHouseView"
+            android:exported="false" />
+        <activity
+            android:name=".NfcVillageView"
+            android:exported="false" />
+        <activity
             android:name=".ScanActivity"
             android:exported="false" />
         <activity
