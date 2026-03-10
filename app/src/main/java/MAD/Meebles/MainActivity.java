@@ -3,6 +3,7 @@ package MAD.Meebles;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -14,12 +15,18 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     private TextView countdownText;
 
-    final int[][] targetTimes = { {12, 30, 0}, {18, 0, 0} }; // 12:00:00 and 18:00:00
+
+    final int[][] targetTimes = { {17, 0, 0} }; // 17:00:00
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +41,62 @@ public class MainActivity extends AppCompatActivity {
 
         countdownText = (TextView) findViewById(R.id.timeDisplay);
 
+        // create new user
+        // store it in hashmap
+        // store internal
+
+        File root = getFilesDir();
+
+        // if there is no file that contains userRepo
+        if (!containsFile(root, "users.dat")) {
+            // write to it
+            File targetFile = new File(root, "users.dat");
+            userObj user = new userObj(0);
+
+            userRepo users = new userRepo();
+            users.addToRepo(user);
+
+            File rootDirOfMyApp = getFilesDir();
+//            File targetFile = new File(rootDirOfMyApp, "pc.dat");
+
+            try {
+                FileOutputStream fileOut = new FileOutputStream(targetFile);
+                ObjectOutputStream out = new ObjectOutputStream(fileOut);
+                out.writeObject(pc);
+            } catch (FileNotFoundException fnfe) {
+                fnfe.printStackTrace();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+
+            try {
+                Log.d(TAG, "Wrote to: " + targetFile.getCanonicalPath());
+            } catch(IOException ioe) {
+                Log.d(TAG, "Wrote to abs path: " + targetFile.getAbsolutePath());
+            }
+
+
+        } else {
+            File targetFile = new File(root, "users.dat");
+        }
+
+        // display user data on texts
+
         startNextCountdown();
+    }
+
+    public boolean containsFile(File dir, String targetName) {
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file: files) {
+                // only grabs audio files
+                String filename = file.getName();
+                if (filename.equals(targetName) { // so it does not display this file
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void startNextCountdown() {
@@ -79,6 +141,9 @@ public class MainActivity extends AppCompatActivity {
             public void onFinish() {
                 countdownText.setText("00:00:00");
                 // Start countdown to the next target automatically
+
+                // create 4 new objects with default populations and then overwrite what
+                // is in internal storage.
                 startNextCountdown();
             }
         }.start();
