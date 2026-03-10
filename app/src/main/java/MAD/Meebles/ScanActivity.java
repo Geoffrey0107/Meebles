@@ -66,12 +66,21 @@ public class ScanActivity extends AppCompatActivity {
         super.onResume();
         Bundle options = new Bundle();
         MYNFCCallbackClass myCallback = new MYNFCCallbackClass();
-        adapter.enableReaderMode(this, myCallback, NfcAdapter.FLAG_READER_NFC_A, options);
+        adapter.enableReaderMode(this,
+                myCallback,
+                NfcAdapter.FLAG_READER_NFC_A,
+                options);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        adapter.disableReaderMode(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
         adapter.disableReaderMode(this);
     }
 
@@ -95,7 +104,9 @@ public class ScanActivity extends AppCompatActivity {
                     Toast.makeText(this, "Unknown location!", Toast.LENGTH_SHORT).show();
                     return;
             }
-            startActivity(intent);
+
+            findViewById(android.R.id.content).postDelayed(() -> startActivity(intent), 500); // this gives the program enough time to disable reader
+            // so then the new nfc tag pop up does not show up.
         });
     }
 
@@ -119,7 +130,7 @@ public class ScanActivity extends AppCompatActivity {
         public void onTagDiscovered(Tag tag) {
             int value = readNumberFromTag(tag);
 
-            String placeName;
+            String placeName = "";
             switch (value) {
                 case 4: placeName = "New Meeble City"; break;
                 case 3: placeName = "South Meeburg"; break;
