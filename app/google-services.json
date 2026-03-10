@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "901886782146",
+    "project_id": "userleaderboard-9d4bb",
+    "storage_bucket": "userleaderboard-9d4bb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:901886782146:android:03be0373b50fb7d510695b",
+        "android_client_info": {
+          "package_name": "MAD.Meebles"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdiSFPNR6Y3DZ7RZmUs43w9_1krgZiTeg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

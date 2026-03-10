@@ -21,17 +21,17 @@
         >
 
         <TextView
-            android:id="@+id/but_1"
+            android:id="@+id/userIdDisplay"
             android:layout_width="130dp"
             android:layout_height="50dp"
             android:layout_row="0"
             android:layout_column="0"
             android:gravity="center"
-            android:text="your growth rate"
+            android:text="your user id"
             android:textSize="16sp" />
 
         <TextView
-            android:id="@+id/but_2"
+            android:id="@+id/popDisplay"
             android:text="your population"
             android:layout_row="0"
             android:layout_column="1"
@@ -42,7 +42,7 @@
             />
 
         <TextView
-            android:id="@+id/but_3"
+            android:id="@+id/placeDisplay"
             android:text="your placement"
             android:layout_row="0"
             android:layout_column="2"

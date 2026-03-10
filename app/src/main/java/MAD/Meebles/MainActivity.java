@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,14 +17,20 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
     private TextView countdownText;
+    final String TAG = "MAIN";
 
 
     final int[][] targetTimes = { {17, 0, 0} }; // 17:00:00
@@ -46,57 +53,113 @@ public class MainActivity extends AppCompatActivity {
         // store internal
 
         File root = getFilesDir();
+        File targetFile = new File(root, "users.dat");
 
-        // if there is no file that contains userRepo
-        if (!containsFile(root, "users.dat")) {
-            // write to it
-            File targetFile = new File(root, "users.dat");
-            userObj user = new userObj(0);
-
-            userRepo users = new userRepo();
-            users.addToRepo(user);
-
-            File rootDirOfMyApp = getFilesDir();
-//            File targetFile = new File(rootDirOfMyApp, "pc.dat");
-
-            try {
-                FileOutputStream fileOut = new FileOutputStream(targetFile);
-                ObjectOutputStream out = new ObjectOutputStream(fileOut);
-                out.writeObject(pc);
-            } catch (FileNotFoundException fnfe) {
-                fnfe.printStackTrace();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-
-            try {
-                Log.d(TAG, "Wrote to: " + targetFile.getCanonicalPath());
-            } catch(IOException ioe) {
-                Log.d(TAG, "Wrote to abs path: " + targetFile.getAbsolutePath());
-            }
+//        updateRepos(targetFile, "users");
 
 
-        } else {
-            File targetFile = new File(root, "users.dat");
-        }
 
-        // display user data on texts
 
         startNextCountdown();
     }
 
-    public boolean containsFile(File dir, String targetName) {
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File file: files) {
-                // only grabs audio files
-                String filename = file.getName();
-                if (filename.equals(targetName) { // so it does not display this file
-                    return true;
-                }
-            }
+//    public void updateRepos(File targetFile, String which) {
+//        // if there is no file that contains userRepo
+//        if (!targetFile.exists()) {
+//            // write to the file and store it
+//
+//           if (which.equals("users")) { // if usersRepo
+//               userObj user = new userObj(0);
+//
+//               userRepo repo = new userRepo();
+//               repo.addToRepo(user);
+//
+//               writeToFile(repo, targetFile);
+//
+//               // display user data on texts
+//               TextView popDisplay = (TextView)findViewById(R.id.popDisplay);
+//
+//               String pop = user.getcurrMeebles() + "";
+//
+//               popDisplay.setText(pop);
+//           }
+//
+//
+//        } else { // does contain users.dat
+//
+//            userRepo currRepo = getCurrUsers(targetFile);
+//
+//            if (which.equals("users")) { // if usersRepo
+//                if (currRepo != null) {
+//                    HashMap<Integer, userObj> hm = currRepo.getHashMap();
+//                    // generate random number between 1-100
+//                    // check if id is in currRepo hashmap
+//                    Random rand = new Random();
+//                    int randomNum = rand.nextInt(100) + 1;
+//                    Set<Integer> keys = hm.keySet();
+//
+//                    if (keys.size() < 100) {
+//                        // display user data on texts
+//                        while(keys.contains(randomNum)) {
+//                            randomNum = rand.nextInt(100) + 1;
+//                        }
+//                        userObj user = new userObj(randomNum);
+//                        hm.put(randomNum, user);
+//                        currRepo.setHashMap(hm);
+//
+//                        writeToFile(currRepo, targetFile);
+//                    } else {
+//                        Log.d(TAG, "FULL");
+//                        Toast.makeText(getApplicationContext(), "MAX USER LIMIT REACHED", Toast.LENGTH_LONG).show();
+//                        finish();
+//                    }
+//
+//                } else {
+//                    Log.d(TAG, "HASHMAP NOT FOUND");
+//                }
+//            }
+//        }
+//    }
+
+    public userRepo getCurrUsers(File targetFile) {
+        try {
+
+            FileInputStream fileIn = new FileInputStream(targetFile);
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+
+            userRepo restoredRepo = (userRepo) in.readObject();
+
+            fileIn.close();
+            in.close();
+
+            return restoredRepo;
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
         }
-        return false;
+
+        return null;
+    }
+
+    public void writeToFile(userRepo repo, File targetFile) {
+        try {
+            FileOutputStream fileOut = new FileOutputStream(targetFile);
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(repo);
+
+            fileOut.close();
+            out.close();
+
+        } catch (FileNotFoundException fnfe) {
+            fnfe.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+
+        try {
+            Log.d(TAG,"Wrote to: " + targetFile.getCanonicalPath());
+        } catch(IOException ioe) {
+            Log.d(TAG, "Wrote to abs path: " + targetFile.getAbsolutePath());
+        }
     }
 
     public void startNextCountdown() {
@@ -140,11 +203,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 countdownText.setText("00:00:00");
-                // Start countdown to the next target automatically
-
-                // create 4 new objects with default populations and then overwrite what
-                // is in internal storage.
-                startNextCountdown();
             }
         }.start();
     }
