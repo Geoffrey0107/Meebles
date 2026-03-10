@@ -105,6 +105,8 @@ public class ScanActivity extends AppCompatActivity {
                     return;
             }
 
+            intent.putExtra("place_id", value);
+
             findViewById(android.R.id.content).postDelayed(() -> startActivity(intent), 500); // this gives the program enough time to disable reader
             // so then the new nfc tag pop up does not show up.
         });
