@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu, menu);
+        menu.findItem(R.id.action_close).setVisible(false);
         return true;
     }
 
@@ -39,6 +40,11 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.pickupDropPage) {
             Intent i = new Intent(getApplicationContext(), ScanActivity.class);
             startActivity(i);
+        } else if (id == R.id.action_close) {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+            return true;
         } else {
             // system will handle if none were clicked
             return super.onOptionsItemSelected(item);
