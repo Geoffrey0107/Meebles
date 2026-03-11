@@ -2,44 +2,33 @@ package MAD.Meebles;
 
 // store users in
 public class userObj {
+    private int id;
+    private int score;
+    private String name; // optional
 
-    private int currMeebles = 0; // amount of meebles the user has
-    private int placement = -1; // determines place
-    private int userId = -1; // userId
-    private int currLoc = -1; // where the user is at
+    // Required empty constructor for Firestore
+    public userObj() {}
 
-
-    public userObj(int userId) {
-        this.userId = userId;
+    public userObj(int id) {
+        this.id = id;
+        this.score = 0;  // default score
+        this.name = "Player" + id; // optional
     }
 
-    public void setPlacement(int placement) {
-        this.placement = placement;
+    public userObj(int id, int score, String name) {
+        this.id = id;
+        this.score = score;
+        this.name = name;
     }
 
-    public void setcurrLoc(int currLoc) {
-        this.currLoc = currLoc;
-    }
+    // Getters and setters
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public void setCurrMeebles(int currMeebles) {
-        this.currMeebles = currMeebles;
-    }
+    public int getScore() { return score; }
+    public void setScore(int score) { this.score = score; }
 
-    public int getcurrMeebles() {
-        return this.currMeebles;
-    }
-
-    public int getPlacement() {
-        return this.placement;
-    }
-
-    public int getcurrLoc() {
-
-        return this.currLoc;
-    }
-
-    public int getuserId() {
-
-        return this.userId;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 }
+

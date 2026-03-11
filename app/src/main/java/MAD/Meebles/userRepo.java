@@ -13,9 +13,9 @@ public class userRepo {
         return this.hashMap;
     }
 
-    public void addToRepo(userObj user) {
-        if (!hashMap.containsKey(user.getuserId())) {
-            hashMap.put(user.getuserId(), user);
-        }
-    }
+//    public void addToRepo(userObj user) {
+//        if (!hashMap.containsKey(user.getuserId())) {
+//            hashMap.put(user.getuserId(), user);
+//        }
+//    }
 }
