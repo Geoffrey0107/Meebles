@@ -21,13 +21,13 @@
         >
 
         <TextView
-            android:id="@+id/userIdDisplay"
+            android:id="@+id/growthDisplay"
             android:layout_width="130dp"
             android:layout_height="50dp"
             android:layout_row="0"
             android:layout_column="0"
             android:gravity="center"
-            android:text="your user id"
+            android:text="your growth rate"
             android:textSize="16sp" />
 
         <TextView
