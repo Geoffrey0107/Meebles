@@ -21,7 +21,7 @@ public class Place {
         this.populationHistory.add(initialPopulation);
     }
 
-    private void grow(){
+    public void grow(){
         population = (int) (population * Math.exp(growthRate));
         if (population > capacity) population = capacity;
         populationHistory.add(population);
@@ -34,7 +34,7 @@ public class Place {
     }
 
     public void release(int amount){
-        int actual = Math.min(amount, this.population-capacity);
+        int actual = Math.min(amount, capacity - population);
         population += actual;
         populationHistory.add(population);
     }

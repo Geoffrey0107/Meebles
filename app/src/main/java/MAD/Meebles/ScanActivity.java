@@ -126,22 +126,83 @@ public class ScanActivity extends AppCompatActivity {
         }
         return Integer.MIN_VALUE;
     }
+    private void writeNumberToTag(Tag tag, int value) {
+        NdefRecord record = NdefRecord.createTextRecord("en", String.valueOf(value));
+        NdefMessage message = new NdefMessage(record);
+
+        Ndef ndef = Ndef.get(tag);
+
+        if (ndef == null) {
+            // Raw tag, needs formatting first
+            formatAndWriteNumberToTag(tag, message);
+        } else {
+            try {
+                ndef.connect();
+                ndef.writeNdefMessage(message);
+                Log.d(TAG, "Successfully wrote " + value + " to tag!");
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to write value to tag", e);
+            } finally {
+                try {
+                    ndef.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to close tag", e);
+                }
+            }
+        }
+    }
+
+    private void formatAndWriteNumberToTag(Tag tag, NdefMessage message) {
+        android.nfc.tech.NdefFormatable formatableTag = android.nfc.tech.NdefFormatable.get(tag);
+
+        if (formatableTag == null) {
+            Log.e(TAG, "Tag is not NDEF-formatable");
+            return;
+        }
+
+        try {
+            formatableTag.connect();
+            formatableTag.format(message); // formats and writes in one step
+            Log.d(TAG, "Tag formatted and written successfully!");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to format tag", e);
+        } finally {
+            try {
+                formatableTag.close();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to close formatable tag", e);
+            }
+        }
+    }
 
     private class MYNFCCallbackClass implements NfcAdapter.ReaderCallback {
         @Override
         public void onTagDiscovered(Tag tag) {
             int value = readNumberFromTag(tag);
 
-            String placeName = "";
-            switch (value) {
-                case 4: placeName = "New Meeble City"; break;
-                case 3: placeName = "South Meeburg"; break;
-                case 2: placeName = "Meeblage"; break;
-                case 1: placeName = "The Meebouse"; break;
+            // If tag does not already contain a valid place number, assign one
+            if (value < 1 || value > 4) {
+                value = findUnusedPlaceId();
+
+                if (value == -1) {
+                    runOnUiThread(() ->
+                            Toast.makeText(ScanActivity.this, "All 4 place IDs are already taken!", Toast.LENGTH_SHORT).show()
+                    );
+                    return;
+                }
+
+                writeNumberToTag(tag, value);
+                markPlaceIdTaken(value);
+            } else {
+                // valid existing tag
+                markPlaceIdTaken(value);
             }
 
-            Log.d(TAG, placeName + " Discovered!");
-            routeToPlace(value);
+            int finalValue = value;
+            runOnUiThread(() -> {
+                Toast.makeText(ScanActivity.this, "Tag mapped to place " + finalValue, Toast.LENGTH_SHORT).show();
+                routeToPlace(finalValue);
+            });
         }
     }
 }

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PlaceRepo {
-    private static PlaceRepo place;
+    static PlaceRepo place;
     private List<Place> places;
 
     private PlaceRepo() {
