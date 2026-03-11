@@ -178,31 +178,44 @@ public class ScanActivity extends AppCompatActivity {
     private class MYNFCCallbackClass implements NfcAdapter.ReaderCallback {
         @Override
         public void onTagDiscovered(Tag tag) {
+//            int value = readNumberFromTag(tag);
+//
+//            // If tag does not already contain a valid place number, assign one
+//            if (value < 1 || value > 4) {
+//                value = findUnusedPlaceId();
+//
+//                if (value == -1) {
+//                    runOnUiThread(() ->
+//                            Toast.makeText(ScanActivity.this, "All 4 place IDs are already taken!", Toast.LENGTH_SHORT).show()
+//                    );
+//                    return;
+//                }
+//
+//                writeNumberToTag(tag, value);
+//                markPlaceIdTaken(value);
+//            } else {
+//                // valid existing tag
+//                markPlaceIdTaken(value);
+//            }
+//
+//            int finalValue = value;
+//            runOnUiThread(() -> {
+//                Toast.makeText(ScanActivity.this, "Tag mapped to place " + finalValue, Toast.LENGTH_SHORT).show();
+//                routeToPlace(finalValue);
+//            });
+
             int value = readNumberFromTag(tag);
 
-            // If tag does not already contain a valid place number, assign one
-            if (value < 1 || value > 4) {
-                value = findUnusedPlaceId();
-
-                if (value == -1) {
-                    runOnUiThread(() ->
-                            Toast.makeText(ScanActivity.this, "All 4 place IDs are already taken!", Toast.LENGTH_SHORT).show()
-                    );
-                    return;
-                }
-
-                writeNumberToTag(tag, value);
-                markPlaceIdTaken(value);
-            } else {
-                // valid existing tag
-                markPlaceIdTaken(value);
+            String placeName = "";
+            switch (value) {
+                case 4: placeName = "New Meeble City"; break;
+                case 3: placeName = "South Meeburg"; break;
+                case 2: placeName = "Meeblage"; break;
+                case 1: placeName = "The Meebouse"; break;
             }
 
-            int finalValue = value;
-            runOnUiThread(() -> {
-                Toast.makeText(ScanActivity.this, "Tag mapped to place " + finalValue, Toast.LENGTH_SHORT).show();
-                routeToPlace(finalValue);
-            });
+            Log.d(TAG, placeName + " Discovered!");
+            routeToPlace(value);
         }
     }
 }

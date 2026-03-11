@@ -9,6 +9,8 @@ public class userObj {
     // Required empty constructor for Firestore
     public userObj() {}
 
+    private static userRepo instance;
+
     public userObj(int id) {
         this.id = id;
         this.score = 0;  // default score
@@ -19,6 +21,14 @@ public class userObj {
         this.id = id;
         this.score = score;
         this.name = name;
+    }
+
+    public static userRepo getInstance() {
+        if (instance == null) {
+            instance = new userRepo();
+        } else {
+            return instance;
+        }
     }
 
     // Getters and setters
