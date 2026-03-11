@@ -1,6 +1,5 @@
 package MAD.Meebles;
 
-import static MAD.Meebles.PlaceRepo.place;
 
 import android.content.Intent;
 import android.graphics.Color;
