@@ -116,7 +116,7 @@ public class NfcHouseView extends AppCompatActivity {
             }
             int amount = Integer.parseInt(input);
             int actualKidnapped = place.kidnap(amount);
-            user.setCurrMeebles(user.getcurrMeebles() + actualKidnapped);
+            user.setScore(user.getScore() + actualKidnapped);
 
             meebleCount.setText("Meebles: " + place.getPopulation());
             updateChart(place.getPopulationHistory());
@@ -131,12 +131,12 @@ public class NfcHouseView extends AppCompatActivity {
                 return;
             }
             int amount = Integer.parseInt(input);
-            if (amount > user.getcurrMeebles()) {
-                Toast.makeText(this, "You only have " + user.getcurrMeebles() + " meebles!", Toast.LENGTH_SHORT).show();
+            if (amount > user.getScore()) {
+                Toast.makeText(this, "You only have " + user.getScore() + " meebles!", Toast.LENGTH_SHORT).show();
                 return;
             }
             place.release(amount);
-            user.setCurrMeebles(user.getcurrMeebles() - amount);
+            user.setScore(user.getScore() - amount);
 
             meebleCount.setText("Meebles: " + place.getPopulation());
             updateChart(place.getPopulationHistory());
