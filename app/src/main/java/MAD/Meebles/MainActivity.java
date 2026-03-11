@@ -1,5 +1,7 @@
 package MAD.Meebles;
 
+import static android.content.ContentValues.TAG;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -24,6 +26,7 @@ import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     private TextView countdownText;
+    private TextView populationView;
 
 
     final int[][] targetTimes = { {17, 0, 0} }; // 17:00:00
@@ -41,48 +44,55 @@ public class MainActivity extends AppCompatActivity {
 
         countdownText = (TextView) findViewById(R.id.timeDisplay);
 
+        populationView = findViewById(R.id.but_2);
+
         // create new user
         // store it in hashmap
         // store internal
 
         File root = getFilesDir();
 
-        // if there is no file that contains userRepo
-        if (!containsFile(root, "users.dat")) {
-            // write to it
-            File targetFile = new File(root, "users.dat");
-            userObj user = new userObj(0);
-
-            userRepo users = new userRepo();
-            users.addToRepo(user);
-
-            File rootDirOfMyApp = getFilesDir();
-//            File targetFile = new File(rootDirOfMyApp, "pc.dat");
-
-            try {
-                FileOutputStream fileOut = new FileOutputStream(targetFile);
-                ObjectOutputStream out = new ObjectOutputStream(fileOut);
-                out.writeObject(pc);
-            } catch (FileNotFoundException fnfe) {
-                fnfe.printStackTrace();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-
-            try {
-                Log.d(TAG, "Wrote to: " + targetFile.getCanonicalPath());
-            } catch(IOException ioe) {
-                Log.d(TAG, "Wrote to abs path: " + targetFile.getAbsolutePath());
-            }
-
-
-        } else {
-            File targetFile = new File(root, "users.dat");
-        }
+//        // if there is no file that contains userRepo
+//        if (!containsFile(root, "users.dat")) {
+//            // write to it
+//            File targetFile = new File(root, "users.dat");
+//            userObj user = new userObj(0);
+//
+//            userRepo users = new userRepo();
+//            users.addToRepo(user);
+//
+//            File rootDirOfMyApp = getFilesDir();
+////            File targetFile = new File(rootDirOfMyApp, "pc.dat");
+//
+//            try {
+//                FileOutputStream fileOut = new FileOutputStream(targetFile);
+//                ObjectOutputStream out = new ObjectOutputStream(fileOut);
+//                out.writeObject(pc);
+//            } catch (FileNotFoundException fnfe) {
+//                fnfe.printStackTrace();
+//            } catch (IOException ioe) {
+//                ioe.printStackTrace();
+//            }
+//
+//            try {
+//                Log.d(TAG, "Wrote to: " + targetFile.getCanonicalPath());
+//            } catch(IOException ioe) {
+//                Log.d(TAG, "Wrote to abs path: " + targetFile.getAbsolutePath());
+//            }
+//
+//
+//        } else {
+//            File targetFile = new File(root, "users.dat");
+//        }
 
         // display user data on texts
 
         startNextCountdown();
+        userRepo repo = userRepo.getInstance();
+        userObj user = repo.getHashMap().get(0);
+        if (user != null) {
+            populationView.setText("Your Meebles: " + user.getcurrMeebles());
+        }
     }
 
     public boolean containsFile(File dir, String targetName) {
@@ -91,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
             for (File file: files) {
                 // only grabs audio files
                 String filename = file.getName();
-                if (filename.equals(targetName) { // so it does not display this file
+                if (filename.equals(targetName)){ // so it does not display this file
                     return true;
                 }
             }

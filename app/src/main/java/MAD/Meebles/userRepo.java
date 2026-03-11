@@ -9,8 +9,16 @@ public class userRepo {
         this.hashMap = hm;
     }
 
+    private static userRepo instance; //I added this to retrieve the user
     public HashMap<Integer, userObj> getHashMap() {
         return this.hashMap;
+    }
+
+    public static userRepo getInstance() {
+        if (instance == null){
+            instance = new userRepo();
+        }
+        return instance;
     }
 
     public void addToRepo(userObj user) {

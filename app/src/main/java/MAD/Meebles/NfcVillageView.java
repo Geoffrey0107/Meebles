@@ -1,9 +1,16 @@
 package MAD.Meebles;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,19 +18,58 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class NfcVillageView extends AppCompatActivity {
+
+    LineChart chart;
+    private Place place;
+    private userObj user;
+    private TextView meebleCount;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_nfc_village_view);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.villageView), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-    }
+
+        //initialize chart
+        chart = findViewById(R.id.populationChart);
+
+        //maybe can remove in the future
+        int placeId = getIntent().getIntExtra("place_id", 1);
+        place = PlaceRepo.getPlace().getByPlaceId(placeId);
+
+
+        userRepo repo = userRepo.getInstance();
+        user = repo.getHashMap().get(0);
+        if (user == null) {
+            user = new userObj(0);
+            repo.addToRepo(user);
+        }
+
+
+        TextView villageName = findViewById(R.id.villageName);
+        villageName.setText(place.getName());
+
+        TextView growthRate = findViewById(R.id.growthRate);
+        growthRate.setText("Growth Rate: " + place.getGrowthRate());
+
+        TextView villageCapacity = findViewById(R.id.villageCapacity);
+        villageCapacity.setText("Max Capacity: " + place.getCapacity());
+
+        meebleCount = findViewById(R.id.meebleCount);
+        meebleCount.setText("Population: " + place.getPopulation());
+
+        updateChart(place.getPopulationHistory());
+        initButtons();
+    };
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -40,5 +86,88 @@ public class NfcVillageView extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void updateChart(List<Integer> history) {
+        List<Entry> entries = new ArrayList<>();
+        for (int i = 0; i < history.size(); i++) {
+            entries.add(new Entry(i, history.get(i)));
+        }
+        LineDataSet dataSet = new LineDataSet(entries, "Population");
+        dataSet.setColor(Color.BLUE);
+        dataSet.setDrawCircles(false);
+        dataSet.setLineWidth(2f);
+
+        LineChart chart = findViewById(R.id.populationChart);
+        chart.setData(new LineData(dataSet));
+        chart.invalidate();
+    }
+
+    private void initButtons() {
+        EditText meebleInput = findViewById(R.id.meebleInput);
+        Button kidnapButton = findViewById(R.id.kidnapButton);
+        Button releaseButton = findViewById(R.id.releaseButton);
+
+        kidnapButton.setOnClickListener(v -> {
+            String input = meebleInput.getText().toString();
+            if (input.isEmpty()) {
+                Toast.makeText(this, "Enter a number first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int amount = Integer.parseInt(input);
+            int actualKidnapped = place.kidnap(amount);
+            user.setCurrMeebles(user.getcurrMeebles() + actualKidnapped);
+
+            meebleCount.setText("Meebles: " + place.getPopulation());
+            updateChart(place.getPopulationHistory());
+            Toast.makeText(this, "Kidnapped " + actualKidnapped + " meebles!", Toast.LENGTH_SHORT).show();
+            meebleInput.setText("");
+        });
+
+        releaseButton.setOnClickListener(v -> {
+            String input = meebleInput.getText().toString();
+            if (input.isEmpty()) {
+                Toast.makeText(this, "Enter a number first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int amount = Integer.parseInt(input);
+            if (amount > user.getcurrMeebles()) {
+                Toast.makeText(this, "You only have " + user.getcurrMeebles() + " meebles!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            place.release(amount);
+            user.setCurrMeebles(user.getcurrMeebles() - amount);
+
+            meebleCount.setText("Meebles: " + place.getPopulation());
+            updateChart(place.getPopulationHistory());
+            Toast.makeText(this, "Released " + amount + " meebles!", Toast.LENGTH_SHORT).show();
+            meebleInput.setText("");
+        });
+    }
+
+    //handles the chart, chart updates itself every 10 seconds.
+    private final Handler growthHandler = new Handler(Looper.getMainLooper());
+    private final Runnable growthRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (place != null) {
+                place.grow();
+                meebleCount.setText("Population: " + place.getPopulation());
+                updateChart(place.getPopulationHistory());
+            }
+            growthHandler.postDelayed(this, 10000);
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        growthHandler.postDelayed(growthRunnable, 10000);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        growthHandler.removeCallbacks(growthRunnable);
     }
 }
