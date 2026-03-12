@@ -53,12 +53,12 @@ public class NfcVillageView extends AppCompatActivity {
         int placeId = getIntent().getIntExtra("place_id", 1);
         place = PlaceRepo.getPlace().getByPlaceId(placeId);
 
-        userRepo repo = userRepo.getInstance();
-        user = repo.getHashMap().get(0);
-        if (user == null) {
-            user = new userObj(0);
-            repo.addToRepo(user);
-        }
+//        userRepo repo = userRepo.getInstance();
+//        user = repo.getHashMap().get(0);
+//        if (user == null) {
+//            user = new userObj(0);
+//            repo.addToRepo(user);
+//        }
 
         USERID = getIntent().getIntExtra("userId", -1); // gets user ID
 
@@ -96,7 +96,6 @@ public class NfcVillageView extends AppCompatActivity {
                         userObj firebaseUser = doc.toObject(userObj.class);
                         if (firebaseUser != null) {
                             user = firebaseUser; // update local reference
-                            meebleCount.setText("Meebles: " + user.getScore());
                         }
                     } else {
                         Log.w(TAG, "User not found in Firebase: " + USERID);

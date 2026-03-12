@@ -54,12 +54,14 @@ public class NfcTownView extends AppCompatActivity {
         int placeId = getIntent().getIntExtra("place_id", 3);
         place = PlaceRepo.getPlace().getByPlaceId(placeId);
 
-        userRepo repo = userRepo.getInstance();
-        user = repo.getHashMap().get(0);
-        if (user == null) {
-            user = new userObj(0);
-            repo.addToRepo(user);
-        }
+//        userRepo repo = userRepo.getInstance();
+//        user = repo.getHashMap().get(0);
+//        if (user == null) {
+//            user = new userObj(0);
+//            repo.addToRepo(user);
+//        }
+
+        fetchUserFromFirebase();
 
         TextView townName = findViewById(R.id.townName);
         townName.setText(place.getName());
@@ -76,6 +78,30 @@ public class NfcTownView extends AppCompatActivity {
         updateChart(place.getPopulationHistory());
         initButtons();
     };
+
+    private void fetchUserFromFirebase() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (USERID == -1) {
+            Log.e(TAG, "Invalid USERID; cannot fetch user from Firebase");
+            return;
+        }
+
+        db.collection("users")
+                .document(String.valueOf(USERID))
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        userObj firebaseUser = doc.toObject(userObj.class);
+                        if (firebaseUser != null) {
+                            user = firebaseUser; // update local reference
+                        }
+                    } else {
+                        Log.w(TAG, "User not found in Firebase: " + USERID);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch user: " + e.getMessage()));
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

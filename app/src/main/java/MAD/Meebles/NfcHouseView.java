@@ -57,12 +57,14 @@ public class NfcHouseView extends AppCompatActivity {
 
         USERID = getIntent().getIntExtra("userId", -1);
 
-        userRepo repo = userRepo.getInstance();
-        user = repo.getHashMap().get(0);
-        if (user == null) {
-            user = new userObj(0);
-            repo.addToRepo(user);
-        }
+//        userRepo repo = userRepo.getInstance();
+//        user = repo.getHashMap().get(0);
+//        if (user == null) {
+//            user = new userObj(0);
+//            repo.addToRepo(user);
+//        }
+
+        fetchUserFromFirebase();
 
 
         TextView houseName = findViewById(R.id.houseName);
@@ -80,6 +82,30 @@ public class NfcHouseView extends AppCompatActivity {
         updateChart(place.getPopulationHistory());
         initButtons();
     };
+
+    private void fetchUserFromFirebase() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (USERID == -1) {
+            Log.e(TAG, "Invalid USERID; cannot fetch user from Firebase");
+            return;
+        }
+
+        db.collection("users")
+                .document(String.valueOf(USERID))
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        userObj firebaseUser = doc.toObject(userObj.class);
+                        if (firebaseUser != null) {
+                            user = firebaseUser; // update local reference
+                        }
+                    } else {
+                        Log.w(TAG, "User not found in Firebase: " + USERID);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch user: " + e.getMessage()));
+    }
 
     public void updatePopulation(int userId, int newPopulation) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
