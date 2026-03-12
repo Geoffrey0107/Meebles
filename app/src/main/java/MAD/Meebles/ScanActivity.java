@@ -58,8 +58,21 @@ public class ScanActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
 
-        MenuItem logout = menu.getItem(R.id.action_log_out);
-        logout.setVisible(false);
+        MenuItem actionClose = menu.findItem(R.id.action_close);
+        MenuItem scanItem = menu.findItem(R.id.pickupDropPage);
+        MenuItem logoutItem = menu.findItem(R.id.action_log_out);
+
+        if (scanItem != null) {
+            scanItem.setVisible(false);
+        }
+
+        if (actionClose != null) {
+            actionClose.setVisible(true);
+        }
+
+        if (logoutItem != null) {
+            logoutItem.setVisible(true);
+        }
 
         return true;
     }

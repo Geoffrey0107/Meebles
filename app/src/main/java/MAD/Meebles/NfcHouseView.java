@@ -99,8 +99,22 @@ public class NfcHouseView extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
 
-        MenuItem logout = menu.getItem(R.id.action_log_out);
-        logout.setVisible(false);
+        MenuItem scanItem = menu.findItem(R.id.pickupDropPage);
+        MenuItem closeItem = menu.findItem(R.id.action_close);
+        MenuItem logoutItem = menu.findItem(R.id.action_log_out);
+
+        // example choices
+        if (scanItem != null) {
+            scanItem.setVisible(true);
+        }
+
+        if (closeItem != null) {
+            closeItem.setVisible(true);
+        }
+
+        if (logoutItem != null) {
+            logoutItem.setVisible(false);
+        }
 
         return true;
     }
