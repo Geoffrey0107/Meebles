@@ -13,6 +13,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Random;
 
@@ -23,6 +26,7 @@ import com.google.firebase.firestore.Query;
 
 
 public class MainActivity extends AppCompatActivity {
+    protected ArrayList<Integer> placeIds = new ArrayList<>(Arrays.asList(1,2,3,4));
     private TextView countdownText;
     final String TAG = "MAIN";
     final int[][] targetTimes = { {17, 0, 0} };// 17:00:00
@@ -117,6 +121,8 @@ public class MainActivity extends AppCompatActivity {
                         TextView popDisplay = findViewById(R.id.popDisplay);
 
                         popDisplay.setText(String.valueOf(user.getScore()));
+
+                        startRealTimePlacementListener(USERID);
                     } else { // if the user does not exist
                         userObj user = new userObj(userId);
                         USERID = user.getId();
@@ -135,6 +141,8 @@ public class MainActivity extends AppCompatActivity {
 
                         db.collection("users").document(String.valueOf(userId)).set(user)
                                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Created New User"));
+
+                        startRealTimePlacementListener(USERID);
                     }
                 })
                 .addOnFailureListener(e -> Log.d(TAG, "Failed to create/load user: " + e.getMessage()));
@@ -188,7 +196,6 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
 
         inflater.inflate(R.menu.main_menu, menu);
-        menu.findItem(R.id.action_close).setVisible(false);
 
         return true;
 
@@ -199,11 +206,15 @@ public class MainActivity extends AppCompatActivity {
             Intent i = new Intent(getApplicationContext(), ScanActivity.class);
             i.putExtra("userId", USERID);
             startActivity(i);
-        } else if (id == R.id.action_close) {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(intent);
-            return true;
+        } else if (id == R.id.action_close) { // when the user exits delete
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            db.collection("users")
+                    .document(String.valueOf(USERID))
+                    .delete()
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "User deleted successfully"))
+                    .addOnFailureListener(e -> Log.d(TAG, "Failed to delete user: " + e.getMessage()));
+
+            System.exit(0); // stops the app entirely
         } else {
             // system will handle if none were clicked
             return super.onOptionsItemSelected(item);

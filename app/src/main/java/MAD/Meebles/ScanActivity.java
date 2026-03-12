@@ -1,6 +1,7 @@
 package MAD.Meebles;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -17,6 +18,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,6 +27,8 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class ScanActivity extends AppCompatActivity {
@@ -118,7 +122,6 @@ public class ScanActivity extends AppCompatActivity {
             // so then the new nfc tag pop up does not show up.
         });
     }
-
     private boolean isNumeric(String num) {
         try {
             int number = Integer.parseInt(num);
@@ -126,6 +129,34 @@ public class ScanActivity extends AppCompatActivity {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    // uses SharedPreferences to mark if id has been taken
+    private void markPlaceIdTaken(int value) {
+        SharedPreferences prefs = getSharedPreferences("place_ids", MODE_PRIVATE);
+        prefs.edit().putBoolean("taken_" + value, true).apply();
+    }
+
+    // checks if ID is taken
+    private boolean isPlaceIdTaken(int value) {
+        SharedPreferences prefs = getSharedPreferences("place_ids", MODE_PRIVATE);
+        return prefs.getBoolean("taken_" + value, false);
+    }
+
+    private int findUnusedPlaceId() {
+        ArrayList<Integer> ids = new ArrayList<>(Arrays.asList(1, 2, 3, 4));
+
+        for (int i = ids.size() - 1; i >= 0; i--) {
+            if (isPlaceIdTaken(ids.get(i))) {
+                ids.remove(i);
+            }
+        }
+
+        if (ids.isEmpty()) {
+            return -1; // all IDs taken
+        }
+        Random rand = new Random();
+        return ids.get(rand.nextInt(ids.size()));
     }
 
     private int readNumberFromTag(Tag tag) {
@@ -138,10 +169,16 @@ public class ScanActivity extends AppCompatActivity {
             data = data.substring(3);
 
             if (!isNumeric(data)) {
-                Random rand = new Random();
-                int number = rand.nextInt(4) + 1; // This is what is being written onto the tag
-                writeNumberToTag(tag, number);
-                return number;
+
+                int number = findUnusedPlaceId(); // gets unusedId
+
+                if (number != - 1) {
+                    writeNumberToTag(tag, number);
+                    markPlaceIdTaken(number);
+                    return number;
+                } else {
+                    Log.d(TAG, "NO PLACEIDs REMAINING");
+                }
             }
 
             return Integer.valueOf(data);
@@ -228,8 +265,6 @@ public class ScanActivity extends AppCompatActivity {
 //            });
 
             int value = readNumberFromTag(tag);
-
-            String tagId = tag.getId().toString(); // convert NFC tag UID to string
 
             String placeName = "";
             switch (value) {
