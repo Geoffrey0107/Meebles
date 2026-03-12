@@ -101,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
                     int placement = 1; // start at first place
                     int userPopulation = 0;
 
+                    // updates the score of this particular user
                     for (DocumentSnapshot doc : snapshots.getDocuments()) {
                         int id =  (int)(long) doc.getLong("id"); // converts from Long to long and then to int.
                         // must convert Long to primitive value long before we can convert to int
@@ -119,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
                     String placementS = placement + "";
                     String userPopS = userPopulation + "";
 
-                    placementText.setText("Placement: " +placementS);
+                    placementText.setText("Placement: \n" +placementS);
                     //popDisplay.setText(userPopS);
                 });
     }
@@ -152,11 +153,11 @@ public class MainActivity extends AppCompatActivity {
                         USERID = user.getId();
 
                         TextView IdDisplay = (TextView)findViewById(R.id.but_1);
-                        IdDisplay.setText(String.valueOf("User ID: " +user.getId()));
+                        IdDisplay.setText(String.valueOf("User ID: \n" + user.getId()));
 
                         TextView popDisplay = findViewById(R.id.but_2);
 
-                        popDisplay.setText(String.valueOf("Meebles:" + user.getScore()));
+                        popDisplay.setText(String.valueOf("Meebles: \n" + user.getScore()));
 
                         startRealTimePlacementListener(USERID);
                     } else { // if the user does not exist
@@ -166,14 +167,14 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "Loaded existing user: " + USERID);
 
                         TextView IdDisplay = (TextView)findViewById(R.id.but_1);
-                        IdDisplay.setText(String.valueOf(user.getId()));
+                        IdDisplay.setText("User ID: \n" + user.getId());
 
                         TextView placementText = findViewById(R.id.but_3);
                         TextView popDisplay = findViewById(R.id.but_2);
 
                         // display score and population
                         placementText.setText(String.valueOf(-1));
-                        popDisplay.setText(String.valueOf(0));
+                        popDisplay.setText("Meebles: \n" + 0);
 
                         db.collection("users").document(String.valueOf(userId)).set(user)
                                 .addOnSuccessListener(aVoid -> Log.d(TAG, "Created New User"));
@@ -233,6 +234,9 @@ public class MainActivity extends AppCompatActivity {
 
         inflater.inflate(R.menu.main_menu, menu);
 
+        MenuItem action_close = menu.findItem(R.id.action_close);
+        action_close.setVisible(false);
+
         return true;
 
     } public boolean onOptionsItemSelected(MenuItem item) {
@@ -242,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
             Intent i = new Intent(getApplicationContext(), ScanActivity.class);
             i.putExtra("userId", USERID);
             startActivity(i);
-        } else if (id == R.id.action_close) { // when the user exits delete
+        } else if (id == R.id.action_log_out) { // when the user exits delete
             FirebaseFirestore db = FirebaseFirestore.getInstance();
             db.collection("users")
                     .document(String.valueOf(USERID))
@@ -250,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
                     .addOnSuccessListener(aVoid -> Log.d(TAG, "User deleted successfully"))
                     .addOnFailureListener(e -> Log.d(TAG, "Failed to delete user: " + e.getMessage()));
 
-            System.exit(0); // stops the app entirely
+            finishAffinity();
         } else {
             // system will handle if none were clicked
             return super.onOptionsItemSelected(item);
