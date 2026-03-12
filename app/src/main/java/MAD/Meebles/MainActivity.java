@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -24,9 +25,8 @@ import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     private TextView countdownText;
-
-
     final int[][] targetTimes = { {17, 0, 0} }; // 17:00:00
+    private TextView populationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +83,49 @@ public class MainActivity extends AppCompatActivity {
         // display user data on texts
 
         startNextCountdown();
+        populationView = findViewById(R.id.but_2);
+        userRepo repo = userRepo.getInstance();
+        userObj user = repo.getHashMap().get(0);
+        if (user != null) {
+            populationView.setText("Your Meebles: " + user.getScore());
+        }
+
+        Button instructionsButton = findViewById(R.id.instructions);
+        instructionsButton.setOnClickListener(v -> {
+            new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this)
+                    .setTitle("How to Play")
+                    .setMessage(
+                            "1. Scan an NFC tag to visit a place.\n\n" +
+
+                                    "2. Each place has a population and a growth rate.\n" +
+                                    "The population grows exponentially over time.\n\n" +
+
+                                    "Growth formula:\n" +
+                                    "P(t) = P₀ · e^(r t)\n\n" +
+
+                                    "P₀ = initial population\n" +
+                                    "r = growth rate\n" +
+                                    "t = time\n\n" +
+
+                                    "3. Kidnap meebles from places to add them to your total.\n\n" +
+                                    "4. Release meebles back into places if you want.\n\n" +
+                                    "5. Try to collect as many meebles as possible before time runs out!"
+                    )
+                    .setPositiveButton("Got it", null)
+                    .show();
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        userRepo repo = userRepo.getInstance();
+        userObj user = repo.getHashMap().get(0);
+
+        if (user != null) {
+            populationView.setText("Your Meebles: " + user.getScore());
+        }
     }
 
     public boolean containsFile(File dir, String targetName) {
