@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Random;
 
+import com.github.mikephil.charting.charts.LineChart;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -30,6 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView countdownText;
     final String TAG = "MAIN";
     final int[][] targetTimes = { {17, 0, 0} };// 17:00:00
+
+    private TextView populationView;
+    LineChart chart;
 
     private int USERID = -1;
 
@@ -47,9 +52,39 @@ public class MainActivity extends AppCompatActivity {
         countdownText = (TextView)findViewById(R.id.timeDisplay);
 
         createOrLoadUser();
-
         startNextCountdown();
+        populationView = findViewById(R.id.but_2);
+        userRepo repo = userRepo.getInstance();
+        userObj user = repo.getHashMap().get(0);
+//        if (user != null) {
+//            populationView.setText("Your Meebles: " + user.getScore());
+//        }
+        Button instructionsButton = findViewById(R.id.instructions);
+        instructionsButton.setOnClickListener(v -> {
+            new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this)
+                    .setTitle("How to Play")
+                    .setMessage(
+                            "1. Scan an NFC tag to visit a place.\n\n" +
+
+                                    "2. Each place has a population and a growth rate.\n" +
+                                    "The population grows exponentially over time.\n\n" +
+
+                                    "Growth formula:\n" +
+                                    "P(t) = P₀ · e^(r t)\n\n" +
+
+                                    "P₀ = initial population\n" +
+                                    "r = growth rate\n" +
+                                    "t = time\n\n" +
+
+                                    "3. Kidnap meebles from places to add them to your total.\n\n" +
+                                    "4. Release meebles back into places if you want.\n\n" +
+                                    "5. Try to collect as many meebles as possible before time runs out!"
+                    )
+                    .setPositiveButton("Got it", null)
+                    .show();
+        });
     }
+
     public void startRealTimePlacementListener(int userId) {
         FirebaseFirestore db = FirebaseFirestore.getInstance(); // Listen to all users ordered by population (score) descending
 
@@ -77,15 +112,16 @@ public class MainActivity extends AppCompatActivity {
                         placement++;
                     }
                     // Update the placement TextView
-                    TextView placementText = findViewById(R.id.placeDisplay);
-                    TextView popDisplay = findViewById(R.id.popDisplay);
+                    TextView placementText = findViewById(R.id.but_3);
+                    //TextView popDisplay = findViewById(R.id.popDisplay);
 
                     // display score and population
                     String placementS = placement + "";
                     String userPopS = userPopulation + "";
 
                     placementText.setText(placementS);
-                    popDisplay.setText(userPopS); });
+                    //popDisplay.setText(userPopS);
+                });
     }
 
     public void createOrLoadUser() {
@@ -115,10 +151,10 @@ public class MainActivity extends AppCompatActivity {
 
                         USERID = user.getId();
 
-                        TextView IdDisplay = (TextView)findViewById(R.id.IdDisplay);
+                        TextView IdDisplay = (TextView)findViewById(R.id.but_1);
                         IdDisplay.setText(String.valueOf(user.getId()));
 
-                        TextView popDisplay = findViewById(R.id.popDisplay);
+                        TextView popDisplay = findViewById(R.id.but_2);
 
                         popDisplay.setText(String.valueOf(user.getScore()));
 
@@ -129,11 +165,11 @@ public class MainActivity extends AppCompatActivity {
 
                         Log.d(TAG, "Loaded existing user: " + USERID);
 
-                        TextView IdDisplay = (TextView)findViewById(R.id.IdDisplay);
+                        TextView IdDisplay = (TextView)findViewById(R.id.but_1);
                         IdDisplay.setText(String.valueOf(user.getId()));
 
-                        TextView placementText = findViewById(R.id.placeDisplay);
-                        TextView popDisplay = findViewById(R.id.popDisplay);
+                        TextView placementText = findViewById(R.id.but_3);
+                        TextView popDisplay = findViewById(R.id.but_2);
 
                         // display score and population
                         placementText.setText(String.valueOf(-1));
