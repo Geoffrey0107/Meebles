@@ -21,10 +21,13 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
 
+
 public class MainActivity extends AppCompatActivity {
     private TextView countdownText;
     final String TAG = "MAIN";
     final int[][] targetTimes = { {17, 0, 0} };// 17:00:00
+
+    private int USERID = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,9 +40,9 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets; });
 
-        countdownText = (TextView) findViewById(R.id.timeDisplay);
+        countdownText = (TextView)findViewById(R.id.timeDisplay);
 
-        createNewUser(0);
+        createOrLoadUser();
 
         startNextCountdown();
     }
@@ -60,8 +63,9 @@ public class MainActivity extends AppCompatActivity {
                     int userPopulation = 0;
 
                     for (DocumentSnapshot doc : snapshots.getDocuments()) {
-                        int id = Integer.parseInt(doc.getString("id"));
-                        int score = Integer.parseInt(doc.getString("score"));
+                        int id =  (int)(long) doc.getLong("id"); // converts from Long to long and then to int.
+                        // must convert Long to primitive value long before we can convert to int
+                        int score = (int)(long) doc.getLong("score");
                         if (id == userId) { // found the user
                             userPopulation = score;
                             break;
@@ -80,14 +84,12 @@ public class MainActivity extends AppCompatActivity {
                     popDisplay.setText(userPopS); });
     }
 
-    public void createNewUser(int initialPopulation) {
+    public void createOrLoadUser() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE); // Check if device already has a userId
         int storedId = prefs.getInt("userId", -1);
         final int userId; // must be final for lambdas
-
-
 
         if (storedId == -1) {
             // No userId stored then generate one
@@ -97,29 +99,45 @@ public class MainActivity extends AppCompatActivity {
             userId = storedId;
         }
         // Create user object
-        userObj user = new userObj(userId, initialPopulation, "Player" + userId);
-
-        TextView placementText = findViewById(R.id.placeDisplay);
-        TextView popDisplay = findViewById(R.id.popDisplay);
-
-        // display score and population
-        String placementS = -1 + "";
-        String userPopS = 0 + "";
-
-        placementText.setText(placementS);
-        popDisplay.setText(userPopS);
 
         // Save to Firebase
         db.collection("users")
                 .document(String.valueOf(userId))
-                .set(user) .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "User created or loaded: " + userId);
-                    // Start real-time placement listener
-                    startRealTimePlacementListener(userId);
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) { // if the user exists
+                        userObj user = doc.toObject(userObj.class);
+                        Log.d(TAG, "Loaded existing user: " + user.getScore());
+
+                        USERID = user.getId();
+
+                        TextView IdDisplay = (TextView)findViewById(R.id.IdDisplay);
+                        IdDisplay.setText(String.valueOf(user.getId()));
+
+                        TextView popDisplay = findViewById(R.id.popDisplay);
+
+                        popDisplay.setText(String.valueOf(user.getScore()));
+                    } else { // if the user does not exist
+                        userObj user = new userObj(userId);
+                        USERID = user.getId();
+
+                        Log.d(TAG, "Loaded existing user: " + USERID);
+
+                        TextView IdDisplay = (TextView)findViewById(R.id.IdDisplay);
+                        IdDisplay.setText(String.valueOf(user.getId()));
+
+                        TextView placementText = findViewById(R.id.placeDisplay);
+                        TextView popDisplay = findViewById(R.id.popDisplay);
+
+                        // display score and population
+                        placementText.setText(String.valueOf(-1));
+                        popDisplay.setText(String.valueOf(0));
+
+                        db.collection("users").document(String.valueOf(userId)).set(user)
+                                .addOnSuccessListener(aVoid -> Log.d(TAG, "Created New User"));
+                    }
                 })
                 .addOnFailureListener(e -> Log.d(TAG, "Failed to create/load user: " + e.getMessage()));
-
-
     }
 
     public void updatePopulation(int userId, int newPopulation) {
@@ -165,25 +183,33 @@ public class MainActivity extends AppCompatActivity {
                 countdownText.setText("00:00:00");
             }
         }.start();
+
     } public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
+
         inflater.inflate(R.menu.main_menu, menu);
         menu.findItem(R.id.action_close).setVisible(false);
+
         return true;
 
     } public boolean onOptionsItemSelected(MenuItem item) {
         final int id = item.getItemId();
+
         if (id == R.id.pickupDropPage) {
             Intent i = new Intent(getApplicationContext(), ScanActivity.class);
+            i.putExtra("userId", USERID);
             startActivity(i);
         } else if (id == R.id.action_close) {
             Intent intent = new Intent(this, MainActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(intent);
             return true;
-        } else { // system will handle if none were clicked
+        } else {
+            // system will handle if none were clicked
             return super.onOptionsItemSelected(item);
-        } // menu item has been handled
+        }
+
+        // menu item has been handled
         return true;
     }
 }

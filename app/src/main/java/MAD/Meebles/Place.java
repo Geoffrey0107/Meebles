@@ -21,6 +21,15 @@ public class Place {
         this.populationHistory.add(initialPopulation);
     }
 
+    public Place(Place other) {
+        this.name = other.getName();
+        this.placeId = other.getPlaceId();
+        this.growthRate = other.getGrowthRate();
+        this.capacity = other.getCapacity();
+        this.population = other.getPopulation();
+        this.populationHistory = other.getPopulationHistory();
+    }
+
     public void grow(){
         population = (int) (population * Math.exp(growthRate));
         if (population > capacity) population = capacity;

@@ -5,6 +5,7 @@ import static MAD.Meebles.PlaceRepo.place;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -19,6 +20,7 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.w3c.dom.Text;
 
@@ -27,7 +29,7 @@ import java.util.List;
 
 public class NfcCityView extends AppCompatActivity {
 
-    LineChart chart = findViewById(R.id.populationChart);
+    LineChart chart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +43,8 @@ public class NfcCityView extends AppCompatActivity {
         });
         int placeId = getIntent().getIntExtra("place_id",4);
         Place place = PlaceRepo.getPlace().getByPlaceId(placeId);
+
+        chart = findViewById(R.id.populationChart);
 
         TextView cityName = (TextView) findViewById(R.id.cityName);
         cityName.setText(place.getName());

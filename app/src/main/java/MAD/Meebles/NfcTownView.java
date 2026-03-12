@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
@@ -22,9 +23,13 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class NfcTownView extends AppCompatActivity {
 
@@ -32,6 +37,8 @@ public class NfcTownView extends AppCompatActivity {
     private Place place;
     private userObj user;
     private TextView meebleCount;
+    final String TAG = "TOWN";
+    private int USERID;
 
 
     @Override
@@ -40,6 +47,7 @@ public class NfcTownView extends AppCompatActivity {
         setContentView(R.layout.activity_nfc_town_view);
 
 
+        USERID = getIntent().getIntExtra("userId", - 1);
 
         chart = findViewById(R.id.populationChart);
 
@@ -101,6 +109,19 @@ public class NfcTownView extends AppCompatActivity {
         chart.invalidate();
     }
 
+    public void updatePopulation(int userId, int newPopulation) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("score", newPopulation);
+
+        db.collection("users")
+                .document(String.valueOf(userId))
+                .set(updates, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Population updated"))
+                .addOnFailureListener(e -> Log.d(TAG, "Failed to update population"));
+    }
+
     private void initButtons() {
         EditText meebleInput = findViewById(R.id.meebleInput);
         Button kidnapButton = findViewById(R.id.kidnapButton);
@@ -115,6 +136,8 @@ public class NfcTownView extends AppCompatActivity {
             int amount = Integer.parseInt(input);
             int actualKidnapped = place.kidnap(amount);
             user.setScore(user.getScore() + actualKidnapped);
+
+            updatePopulation(USERID, amount);
 
             meebleCount.setText("Meebles: " + place.getPopulation());
             updateChart(place.getPopulationHistory());
@@ -135,6 +158,8 @@ public class NfcTownView extends AppCompatActivity {
             }
             place.release(amount);
             user.setScore(user.getScore() - amount);
+
+            updatePopulation(USERID, user.getScore());
 
             meebleCount.setText("Meebles: " + place.getPopulation());
             updateChart(place.getPopulationHistory());

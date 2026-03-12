@@ -25,10 +25,14 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.util.Random;
+
 public class ScanActivity extends AppCompatActivity {
 
     private static final String TAG = "ScanActivity";
     private NfcAdapter adapter;
+
+    private int USERID;
 
 
     @Override
@@ -42,6 +46,8 @@ public class ScanActivity extends AppCompatActivity {
         ImageView meebleImage = findViewById(R.id.meebleImage);
         Animation pulse = AnimationUtils.loadAnimation(this, R.anim.pulse);
         meebleImage.startAnimation(pulse);
+
+        USERID = getIntent().getIntExtra("userId", -1);
     }
 
     @Override
@@ -106,10 +112,20 @@ public class ScanActivity extends AppCompatActivity {
             }
 
             intent.putExtra("place_id", value);
+            intent.putExtra("userId", USERID); // transfers userId as well
 
             findViewById(android.R.id.content).postDelayed(() -> startActivity(intent), 500); // this gives the program enough time to disable reader
             // so then the new nfc tag pop up does not show up.
         });
+    }
+
+    private boolean isNumeric(String num) {
+        try {
+            int number = Integer.parseInt(num);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     private int readNumberFromTag(Tag tag) {
@@ -120,6 +136,14 @@ public class ScanActivity extends AppCompatActivity {
             String data = new String(msg.getRecords()[0].getPayload());
             Log.d(TAG, "Read from tag: " + data);
             data = data.substring(3);
+
+            if (!isNumeric(data)) {
+                Random rand = new Random();
+                int number = rand.nextInt(4) + 1; // This is what is being written onto the tag
+                writeNumberToTag(tag, number);
+                return number;
+            }
+
             return Integer.valueOf(data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -137,7 +161,6 @@ public class ScanActivity extends AppCompatActivity {
             formatAndWriteNumberToTag(tag, message);
         } else {
             try {
-                ndef.connect();
                 ndef.writeNdefMessage(message);
                 Log.d(TAG, "Successfully wrote " + value + " to tag!");
             } catch (Exception e) {
@@ -205,6 +228,8 @@ public class ScanActivity extends AppCompatActivity {
 //            });
 
             int value = readNumberFromTag(tag);
+
+            String tagId = tag.getId().toString(); // convert NFC tag UID to string
 
             String placeName = "";
             switch (value) {
