@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
                     String placementS = placement + "";
                     String userPopS = userPopulation + "";
 
-                    placementText.setText("Placement: \n" +placementS);
+                    placementText.setText("Rank: \n" +placementS);
                     //popDisplay.setText(userPopS);
                 });
     }

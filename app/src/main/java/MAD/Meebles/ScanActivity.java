@@ -57,6 +57,10 @@ public class ScanActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
+
+        MenuItem logout = menu.getItem(R.id.action_log_out);
+        logout.setVisible(false);
+
         return true;
     }
 

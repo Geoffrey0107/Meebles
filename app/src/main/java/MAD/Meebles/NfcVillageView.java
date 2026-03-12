@@ -96,6 +96,10 @@ public class NfcVillageView extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
+
+        MenuItem logout = menu.getItem(R.id.action_log_out);
+        logout.setVisible(false);
+
         return true;
     }
 
@@ -111,6 +115,8 @@ public class NfcVillageView extends AppCompatActivity {
         if (item.getItemId() == R.id.pickupDropPage) {
             Intent intent = new Intent(this, ScanActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.putExtra("userId", USERID); // transfers userId as well
+            // if I do not transfer it here, USERID will become -1 and this will give us nullptr exceptions
             startActivity(intent);
             return true;
         }
@@ -147,7 +153,7 @@ public class NfcVillageView extends AppCompatActivity {
             int actualKidnapped = place.kidnap(amount);
             user.setScore(user.getScore() + actualKidnapped);
 
-            updatePopulation(USERID, amount);
+            updatePopulation(USERID, user.getScore());
 
             meebleCount.setText("Meebles: " + place.getPopulation());
             updateChart(place.getPopulationHistory());
