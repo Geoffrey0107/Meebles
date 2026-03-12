@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                     String placementS = placement + "";
                     String userPopS = userPopulation + "";
 
-                    placementText.setText(placementS);
+                    placementText.setText("Placement: " +placementS);
                     //popDisplay.setText(userPopS);
                 });
     }
@@ -152,11 +152,11 @@ public class MainActivity extends AppCompatActivity {
                         USERID = user.getId();
 
                         TextView IdDisplay = (TextView)findViewById(R.id.but_1);
-                        IdDisplay.setText(String.valueOf(user.getId()));
+                        IdDisplay.setText(String.valueOf("User ID: " +user.getId()));
 
                         TextView popDisplay = findViewById(R.id.but_2);
 
-                        popDisplay.setText(String.valueOf(user.getScore()));
+                        popDisplay.setText(String.valueOf("Meebles:" + user.getScore()));
 
                         startRealTimePlacementListener(USERID);
                     } else { // if the user does not exist
