@@ -1,214 +1,220 @@
 package MAD.Meebles;
-
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.Button;
 import android.widget.TextView;
-
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Random;
+
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+
+
 
 public class MainActivity extends AppCompatActivity {
+    protected ArrayList<Integer> placeIds = new ArrayList<>(Arrays.asList(1,2,3,4));
     private TextView countdownText;
-    final int[][] targetTimes = { {17, 0, 0} }; // 17:00:00
-    private TextView populationView;
+    final String TAG = "MAIN";
+    final int[][] targetTimes = { {17, 0, 0} };// 17:00:00
+
+    private int USERID = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (
+                v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+            return insets; });
 
-        countdownText = (TextView) findViewById(R.id.timeDisplay);
+        countdownText = (TextView)findViewById(R.id.timeDisplay);
 
-        // create new user
-        // store it in hashmap
-        // store internal
-
-//        File root = getFilesDir();
-//
-//        // if there is no file that contains userRepo
-//        if (!containsFile(root, "users.dat")) {
-//            // write to it
-//            File targetFile = new File(root, "users.dat");
-//            userObj user = new userObj(0);
-//
-//            userRepo users = new userRepo();
-//            users.addToRepo(user);
-//
-//            File rootDirOfMyApp = getFilesDir();
-////            File targetFile = new File(rootDirOfMyApp, "pc.dat");
-//
-//            try {
-//                FileOutputStream fileOut = new FileOutputStream(targetFile);
-//                ObjectOutputStream out = new ObjectOutputStream(fileOut);
-//                out.writeObject(pc);
-//            } catch (FileNotFoundException fnfe) {
-//                fnfe.printStackTrace();
-//            } catch (IOException ioe) {
-//                ioe.printStackTrace();
-//            }
-//
-//            try {
-//                Log.d(TAG, "Wrote to: " + targetFile.getCanonicalPath());
-//            } catch(IOException ioe) {
-//                Log.d(TAG, "Wrote to abs path: " + targetFile.getAbsolutePath());
-//            }
-//
-//
-//        } else {
-//            File targetFile = new File(root, "users.dat");
-//        }
-
-        // display user data on texts
+        createOrLoadUser();
 
         startNextCountdown();
-        populationView = findViewById(R.id.but_2);
-        userRepo repo = userRepo.getInstance();
-        userObj user = repo.getHashMap().get(0);
-        if (user != null) {
-            populationView.setText("Your Meebles: " + user.getScore());
-        }
+    }
+    public void startRealTimePlacementListener(int userId) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance(); // Listen to all users ordered by population (score) descending
 
-        Button instructionsButton = findViewById(R.id.instructions);
-        instructionsButton.setOnClickListener(v -> {
-            new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this)
-                    .setTitle("How to Play")
-                    .setMessage(
-                            "1. Scan an NFC tag to visit a place.\n\n" +
+        db.collection("users")
+                .orderBy("score", Query.Direction.DESCENDING)
+                .addSnapshotListener((snapshots, e) -> {
 
-                                    "2. Each place has a population and a growth rate.\n" +
-                                    "The population grows exponentially over time.\n\n" +
+                    if (e != null) {
+                        Log.w(TAG, "Listen failed.", e);
+                        return;
+                    }
 
-                                    "Growth formula:\n" +
-                                    "P(t) = P₀ · e^(r t)\n\n" +
+                    if (snapshots == null || snapshots.isEmpty()) return;
+                    int placement = 1; // start at first place
+                    int userPopulation = 0;
 
-                                    "P₀ = initial population\n" +
-                                    "r = growth rate\n" +
-                                    "t = time\n\n" +
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        int id =  (int)(long) doc.getLong("id"); // converts from Long to long and then to int.
+                        // must convert Long to primitive value long before we can convert to int
+                        int score = (int)(long) doc.getLong("score");
+                        if (id == userId) { // found the user
+                            userPopulation = score;
+                            break;
+                        }
+                        placement++;
+                    }
+                    // Update the placement TextView
+                    TextView placementText = findViewById(R.id.placeDisplay);
+                    TextView popDisplay = findViewById(R.id.popDisplay);
 
-                                    "3. Kidnap meebles from places to add them to your total.\n\n" +
-                                    "4. Release meebles back into places if you want.\n\n" +
-                                    "5. Try to collect as many meebles as possible before time runs out!"
-                    )
-                    .setPositiveButton("Got it", null)
-                    .show();
-        });
+                    // display score and population
+                    String placementS = placement + "";
+                    String userPopS = userPopulation + "";
+
+                    placementText.setText(placementS);
+                    popDisplay.setText(userPopS); });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+    public void createOrLoadUser() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        userRepo repo = userRepo.getInstance();
-        userObj user = repo.getHashMap().get(0);
+        SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE); // Check if device already has a userId
+        int storedId = prefs.getInt("userId", -1);
+        final int userId; // must be final for lambdas
 
-        if (user != null) {
-            populationView.setText("Your Meebles: " + user.getScore());
+        if (storedId == -1) {
+            // No userId stored then generate one
+            userId = new Random().nextInt(1000); // bigger range to reduce collisions
+            prefs.edit().putInt("userId", userId).apply();
+        } else {
+            userId = storedId;
         }
+        // Create user object
+
+        // Save to Firebase
+        db.collection("users")
+                .document(String.valueOf(userId))
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) { // if the user exists
+                        userObj user = doc.toObject(userObj.class);
+                        Log.d(TAG, "Loaded existing user: " + user.getScore());
+
+                        USERID = user.getId();
+
+                        TextView IdDisplay = (TextView)findViewById(R.id.IdDisplay);
+                        IdDisplay.setText(String.valueOf(user.getId()));
+
+                        TextView popDisplay = findViewById(R.id.popDisplay);
+
+                        popDisplay.setText(String.valueOf(user.getScore()));
+
+                        startRealTimePlacementListener(USERID);
+                    } else { // if the user does not exist
+                        userObj user = new userObj(userId);
+                        USERID = user.getId();
+
+                        Log.d(TAG, "Loaded existing user: " + USERID);
+
+                        TextView IdDisplay = (TextView)findViewById(R.id.IdDisplay);
+                        IdDisplay.setText(String.valueOf(user.getId()));
+
+                        TextView placementText = findViewById(R.id.placeDisplay);
+                        TextView popDisplay = findViewById(R.id.popDisplay);
+
+                        // display score and population
+                        placementText.setText(String.valueOf(-1));
+                        popDisplay.setText(String.valueOf(0));
+
+                        db.collection("users").document(String.valueOf(userId)).set(user)
+                                .addOnSuccessListener(aVoid -> Log.d(TAG, "Created New User"));
+
+                        startRealTimePlacementListener(USERID);
+                    }
+                })
+                .addOnFailureListener(e -> Log.d(TAG, "Failed to create/load user: " + e.getMessage()));
     }
 
-    public boolean containsFile(File dir, String targetName) {
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File file: files) {
-                // only grabs audio files
-                String filename = file.getName();
-                if (filename.equals(targetName)) { // so it does not display this file
-                    return true;
-                }
-            }
-        }
-        return false;
+    public void updatePopulation(int userId, int newPopulation) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("users")
+                .document(String.valueOf(userId))
+                .update("score", newPopulation)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Population updated"))
+                .addOnFailureListener(e -> Log.d(TAG, "Failed to update population"));
     }
 
     public void startNextCountdown() {
         Calendar now = Calendar.getInstance();
         Calendar nextTarget = null;
-
         for (int[] t : targetTimes) {
             Calendar temp = (Calendar) now.clone();
             temp.set(Calendar.HOUR_OF_DAY, t[0]);
             temp.set(Calendar.MINUTE, t[1]);
             temp.set(Calendar.SECOND, t[2]);
             temp.set(Calendar.MILLISECOND, 0);
-
             if (temp.after(now)) {
-                nextTarget = temp;
-                break;
+                nextTarget = temp; break;
             }
         }
 
         if (nextTarget == null) { // all times passed today, pick first target tomorrow
-            nextTarget = (Calendar) now.clone();
-            nextTarget.add(Calendar.DAY_OF_MONTH, 1);
+            nextTarget = (Calendar) now.clone(); nextTarget.add(Calendar.DAY_OF_MONTH, 1);
             nextTarget.set(Calendar.HOUR_OF_DAY, targetTimes[0][0]);
-            nextTarget.set(Calendar.MINUTE, targetTimes[0][1]);
-            nextTarget.set(Calendar.SECOND, targetTimes[0][2]);
+            nextTarget.set(Calendar.MINUTE, targetTimes[0][1]); nextTarget.set(Calendar.SECOND, targetTimes[0][2]);
             nextTarget.set(Calendar.MILLISECOND, 0);
         }
-
         long diffMillis = nextTarget.getTimeInMillis() - now.getTimeInMillis();
 
         new CountDownTimer(diffMillis, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
+            @Override public void onTick(long millisUntilFinished) {
                 long seconds = millisUntilFinished / 1000 % 60;
                 long minutes = millisUntilFinished / (1000 * 60) % 60;
-                long hours   = millisUntilFinished / (1000 * 60 * 60);
-
+                long hours = millisUntilFinished / (1000 * 60 * 60);
                 countdownText.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
             }
 
-            @Override
-            public void onFinish() {
+            @Override public void onFinish() {
                 countdownText.setText("00:00:00");
-                // Start countdown to the next target automatically
-
-                // create 4 new objects with default populations and then overwrite what
-                // is in internal storage.
-                startNextCountdown();
             }
         }.start();
-    }
 
-    public boolean onCreateOptionsMenu(Menu menu) {
+    } public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu, menu);
-        menu.findItem(R.id.action_close).setVisible(false);
-        return true;
-    }
 
-    public boolean onOptionsItemSelected(MenuItem item) {
+        inflater.inflate(R.menu.main_menu, menu);
+
+        return true;
+
+    } public boolean onOptionsItemSelected(MenuItem item) {
         final int id = item.getItemId();
+
         if (id == R.id.pickupDropPage) {
             Intent i = new Intent(getApplicationContext(), ScanActivity.class);
+            i.putExtra("userId", USERID);
             startActivity(i);
-        } else if (id == R.id.action_close) {
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(intent);
-            return true;
+        } else if (id == R.id.action_close) { // when the user exits delete
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            db.collection("users")
+                    .document(String.valueOf(USERID))
+                    .delete()
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "User deleted successfully"))
+                    .addOnFailureListener(e -> Log.d(TAG, "Failed to delete user: " + e.getMessage()));
+
+            System.exit(0); // stops the app entirely
         } else {
             // system will handle if none were clicked
             return super.onOptionsItemSelected(item);
