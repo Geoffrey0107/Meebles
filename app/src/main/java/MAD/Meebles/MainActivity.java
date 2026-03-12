@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,6 +22,9 @@ import java.util.Calendar;
 import java.util.Random;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -33,10 +37,79 @@ public class MainActivity extends AppCompatActivity {
     final String TAG = "MAIN";
     final int[][] targetTimes = { {17, 0, 0} };// 17:00:00
 
+    private ArrayList<Integer> userPopulationHistory = new ArrayList<>();
+    double[] possibleRates = {0.04, 0.06, 0.08, 0.10};
+
+    private double userGrowthRate;
+
+    private android.os.Handler growthHandler = new android.os.Handler();
+
     private TextView populationView;
     LineChart chart;
 
     private int USERID = -1;
+
+    private boolean growthRateSolved = false;
+
+    private final Runnable growthRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (USERID != -1) {
+                growUserPopulation();
+            }
+            growthHandler.postDelayed(this, 10000); // every 10 seconds
+        }
+    };
+
+    private void growUserPopulation() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users")
+                .document(String.valueOf(USERID))
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
+
+                    userObj user = doc.toObject(userObj.class);
+                    if (user == null) return;
+
+                    int currentScore = user.getScore();
+
+                    // no growth if user has no meebles
+                    if (currentScore <= 0) return;
+
+                    double deltaT = 1.0; // one growth step
+                    int newScore = (int) Math.round(currentScore * Math.exp(userGrowthRate * deltaT));
+
+                    user.setScore(newScore);
+
+                    if (userPopulationHistory.isEmpty()) {
+                        userPopulationHistory.add(currentScore);
+                    }
+                    userPopulationHistory.add(newScore);
+
+                    db.collection("users")
+                            .document(String.valueOf(USERID))
+                            .update("score", newScore)
+                            .addOnSuccessListener(aVoid -> {
+                                populationView.setText("Meebles: \n" + newScore);
+                                updateChart(userPopulationHistory);
+                            });
+                });
+    }
+
+    private void initializeChart() {
+        ArrayList<Entry> entries = new ArrayList<>();
+        entries.add(new Entry(0, 0));
+
+        LineDataSet dataSet = new LineDataSet(entries, "Your Meebles");
+        dataSet.setDrawCircles(true);
+        dataSet.setLineWidth(2f);
+
+        LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
+        chart.invalidate();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,10 +123,14 @@ public class MainActivity extends AppCompatActivity {
             return insets; });
 
         countdownText = (TextView)findViewById(R.id.timeDisplay);
-
+        chart = findViewById(R.id.userPopulationChart);
+        initializeChart();
         createOrLoadUser();
         startNextCountdown();
         populationView = findViewById(R.id.but_2);
+
+        userGrowthRate = possibleRates[new Random().nextInt(possibleRates.length)];
+
         userRepo repo = userRepo.getInstance();
         userObj user = repo.getHashMap().get(0);
 //        if (user != null) {
@@ -66,22 +143,78 @@ public class MainActivity extends AppCompatActivity {
                     .setMessage(
                             "1. Scan an NFC tag to visit a place.\n\n" +
 
-                                    "2. Each place has a population and a growth rate.\n" +
-                                    "The population grows exponentially over time.\n\n" +
+                                    "2. Every place has a population and its own growth rate.\n" +
+                                    "Population grows exponentially over time:\n" +
+                                    "P(t) = P₀ · e^(rt)\n\n" +
 
-                                    "Growth formula:\n" +
-                                    "P(t) = P₀ · e^(r t)\n\n" +
+                                    "3. Kidnap meebles from places to add them to your own population.\n\n" +
 
-                                    "P₀ = initial population\n" +
-                                    "r = growth rate\n" +
-                                    "t = time\n\n" +
+                                    "4. Your meebles also grow at a fixed growth rate.\n" +
+                                    "Cities and towns have different growth rates to explore.\n\n" +
 
-                                    "3. Kidnap meebles from places to add them to your total.\n\n" +
-                                    "4. Release meebles back into places if you want.\n\n" +
-                                    "5. Try to collect as many meebles as possible before time runs out!"
+                                    "5. Be careful not to exceed the maximum capacity of a place!\n\n" +
+
+                                    "6. Try to grow as many meebles as possible before time runs out."
                     )
                     .setPositiveButton("Got it", null)
                     .show();
+        });
+        Button guessButton = findViewById(R.id.guessButton);
+        EditText guessInput = findViewById(R.id.guessInput);
+        TextView guessResult = findViewById(R.id.guessResult);
+
+        guessButton.setOnClickListener(v -> {
+            if (growthRateSolved) {
+                guessResult.setText("You already solved the growth rate!");
+                return;
+            }
+
+            String text = guessInput.getText().toString().trim();
+
+            if (text.isEmpty()) {
+                guessResult.setText("Enter a growth rate first.");
+                return;
+            }
+
+            try {
+                double guess = Double.parseDouble(text);
+                double diff = Math.abs(guess - userGrowthRate);
+
+                if (diff < 0.005) {
+                    guessResult.setText("Wow now you know exponential growth, please accept our gift");
+
+                    growthRateSolved = true;
+                    guessButton.setEnabled(false);
+                    guessInput.setEnabled(false);
+
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                    db.collection("users")
+                            .document(String.valueOf(USERID))
+                            .get()
+                            .addOnSuccessListener(doc -> {
+
+                                if (!doc.exists()) return;
+
+                                int currentScore = ((Long) doc.getLong("score")).intValue();
+
+                                int newScore = currentScore + 500;
+
+                                updatePopulation(USERID, newScore);
+
+                                populationView.setText("Meebles:\n" + newScore);
+
+                            });
+                } else if (diff < 0.02) {
+                    guessResult.setText("Almost, try again!");
+                } else if (guess < userGrowthRate) {
+                    guessResult.setText("Too low, You can do better than that!");
+                } else {
+                    guessResult.setText("Too high, look more closely");
+                }
+            } catch (NumberFormatException e) {
+                guessResult.setText("Enter a valid decimal number like 0.06");
+            }
         });
     }
 
@@ -262,5 +395,33 @@ public class MainActivity extends AppCompatActivity {
 
         // menu item has been handled
         return true;
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        growthHandler.postDelayed(growthRunnable, 10000);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        growthHandler.removeCallbacks(growthRunnable);
+    }
+    private void updateChart(ArrayList<Integer> history) {
+        ArrayList<com.github.mikephil.charting.data.Entry> entries = new ArrayList<>();
+
+        for (int i = 0; i < history.size(); i++) {
+            entries.add(new com.github.mikephil.charting.data.Entry(i, history.get(i)));
+        }
+
+        com.github.mikephil.charting.data.LineDataSet dataSet =
+                new com.github.mikephil.charting.data.LineDataSet(entries, "Your Meebles");
+
+        dataSet.setDrawCircles(false);
+        dataSet.setLineWidth(2f);
+        dataSet.setColor(android.graphics.Color.BLUE);
+
+        chart.setData(new com.github.mikephil.charting.data.LineData(dataSet));
+        chart.invalidate();
     }
 }

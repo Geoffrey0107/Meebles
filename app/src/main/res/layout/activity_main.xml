@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -92,20 +96,63 @@
 
 
     <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/lineChart"
+        android:id="@+id/userPopulationChart"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         app:layout_constraintTop_toBottomOf="@+id/instructions"
         android:layout_marginTop="30dp"/>
 
 
-    <ListView
-        android:id="@+id/whereMeebles"
+    <TextView
+        android:id="@+id/growthFormula"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@+id/lineChart"
+        android:text="Exponential Growth\n\nP(t) = P₀ · e^(rt)\n\nP₀ = initial population\nr = growth rate\nt = time"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:padding="16dp"
+        app:layout_constraintTop_toBottomOf="@id/userPopulationChart"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"/>
 
+    <EditText
+        android:id="@+id/guessInput"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:hint="Guess growth rate r"
+        android:inputType="numberDecimal"
+        android:gravity="center"
+        android:textSize="18sp"
+        app:layout_constraintTop_toBottomOf="@id/growthFormula"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="20dp" />
+
+    <Button
+        android:id="@+id/guessButton"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="Check Guess"
+        android:textSize="18sp"
+        app:layout_constraintTop_toBottomOf="@id/guessInput"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:id="@+id/guessResult"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Watch the graph, then guess r."
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="12dp"
+        app:layout_constraintTop_toBottomOf="@id/guessButton"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="12dp"
+        android:layout_marginLeft="24dp"
+        android:layout_marginRight="24dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
