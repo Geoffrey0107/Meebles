@@ -53,7 +53,6 @@ public class NfcVillageView extends AppCompatActivity {
         int placeId = getIntent().getIntExtra("place_id", 1);
         place = PlaceRepo.getPlace().getByPlaceId(placeId);
 
-
         userRepo repo = userRepo.getInstance();
         user = repo.getHashMap().get(0);
         if (user == null) {
@@ -63,6 +62,7 @@ public class NfcVillageView extends AppCompatActivity {
 
         USERID = getIntent().getIntExtra("userId", -1); // gets user ID
 
+        fetchUserFromFirebase();
 
         TextView villageName = findViewById(R.id.villageName);
         villageName.setText(place.getName());
@@ -79,6 +79,31 @@ public class NfcVillageView extends AppCompatActivity {
         updateChart(place.getPopulationHistory());
         initButtons();
     };
+
+    private void fetchUserFromFirebase() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (USERID == -1) {
+            Log.e(TAG, "Invalid USERID; cannot fetch user from Firebase");
+            return;
+        }
+
+        db.collection("users")
+                .document(String.valueOf(USERID))
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        userObj firebaseUser = doc.toObject(userObj.class);
+                        if (firebaseUser != null) {
+                            user = firebaseUser; // update local reference
+                            meebleCount.setText("Meebles: " + user.getScore());
+                        }
+                    } else {
+                        Log.w(TAG, "User not found in Firebase: " + USERID);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch user: " + e.getMessage()));
+    }
 
     public void updatePopulation(int userId, int newPopulation) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
