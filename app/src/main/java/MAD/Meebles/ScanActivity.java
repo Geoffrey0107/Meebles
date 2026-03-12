@@ -1,6 +1,7 @@
 package MAD.Meebles;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -17,6 +18,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,10 +27,16 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Random;
+
 public class ScanActivity extends AppCompatActivity {
 
     private static final String TAG = "ScanActivity";
     private NfcAdapter adapter;
+
+    private int USERID;
 
 
     @Override
@@ -42,6 +50,8 @@ public class ScanActivity extends AppCompatActivity {
         ImageView meebleImage = findViewById(R.id.meebleImage);
         Animation pulse = AnimationUtils.loadAnimation(this, R.anim.pulse);
         meebleImage.startAnimation(pulse);
+
+        USERID = getIntent().getIntExtra("userId", -1);
     }
 
     @Override
@@ -106,10 +116,47 @@ public class ScanActivity extends AppCompatActivity {
             }
 
             intent.putExtra("place_id", value);
+            intent.putExtra("userId", USERID); // transfers userId as well
 
             findViewById(android.R.id.content).postDelayed(() -> startActivity(intent), 500); // this gives the program enough time to disable reader
             // so then the new nfc tag pop up does not show up.
         });
+    }
+    private boolean isNumeric(String num) {
+        try {
+            int number = Integer.parseInt(num);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    // uses SharedPreferences to mark if id has been taken
+    private void markPlaceIdTaken(int value) {
+        SharedPreferences prefs = getSharedPreferences("place_ids", MODE_PRIVATE);
+        prefs.edit().putBoolean("taken_" + value, true).apply();
+    }
+
+    // checks if ID is taken
+    private boolean isPlaceIdTaken(int value) {
+        SharedPreferences prefs = getSharedPreferences("place_ids", MODE_PRIVATE);
+        return prefs.getBoolean("taken_" + value, false);
+    }
+
+    private int findUnusedPlaceId() {
+        ArrayList<Integer> ids = new ArrayList<>(Arrays.asList(1, 2, 3, 4));
+
+        for (int i = ids.size() - 1; i >= 0; i--) {
+            if (isPlaceIdTaken(ids.get(i))) {
+                ids.remove(i);
+            }
+        }
+
+        if (ids.isEmpty()) {
+            return -1; // all IDs taken
+        }
+        Random rand = new Random();
+        return ids.get(rand.nextInt(ids.size()));
     }
 
     private int readNumberFromTag(Tag tag) {
@@ -120,6 +167,20 @@ public class ScanActivity extends AppCompatActivity {
             String data = new String(msg.getRecords()[0].getPayload());
             Log.d(TAG, "Read from tag: " + data);
             data = data.substring(3);
+
+            if (!isNumeric(data)) {
+
+                int number = findUnusedPlaceId(); // gets unusedId
+
+                if (number != - 1) {
+                    writeNumberToTag(tag, number);
+                    markPlaceIdTaken(number);
+                    return number;
+                } else {
+                    Log.d(TAG, "NO PLACEIDs REMAINING");
+                }
+            }
+
             return Integer.valueOf(data);
         } catch (Exception e) {
             e.printStackTrace();
@@ -137,7 +198,6 @@ public class ScanActivity extends AppCompatActivity {
             formatAndWriteNumberToTag(tag, message);
         } else {
             try {
-                ndef.connect();
                 ndef.writeNdefMessage(message);
                 Log.d(TAG, "Successfully wrote " + value + " to tag!");
             } catch (Exception e) {

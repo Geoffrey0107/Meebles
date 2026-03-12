@@ -1,13 +1,16 @@
 package MAD.Meebles;
-
-import static MAD.Meebles.PlaceRepo.place;
-
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,42 +22,73 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-
-import org.w3c.dom.Text;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class NfcCityView extends AppCompatActivity {
 
-    LineChart chart = findViewById(R.id.populationChart);
+    LineChart chart;
+    private Place place;
+    private userObj user;
+    private TextView meebleCount;
+    private int USERID;
+    private final String TAG = "CITY";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_nfc_city_view);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.cityView), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-        int placeId = getIntent().getIntExtra("place_id",4);
-        Place place = PlaceRepo.getPlace().getByPlaceId(placeId);
 
-        TextView cityName = (TextView) findViewById(R.id.cityName);
+        //initialize chart
+        chart = findViewById(R.id.populationChart);
+
+        //maybe can remove in the future
+        int placeId = getIntent().getIntExtra("place_id", 1);
+        place = PlaceRepo.getPlace().getByPlaceId(placeId);
+
+        USERID = getIntent().getIntExtra("userId", -1);
+
+        userRepo repo = userRepo.getInstance();
+        user = repo.getHashMap().get(0);
+        if (user == null) {
+            user = new userObj(0);
+            repo.addToRepo(user);
+        }
+
+
+        TextView cityName = findViewById(R.id.cityName);
         cityName.setText(place.getName());
 
-        TextView growthRate = (TextView) findViewById(R.id.growthRate);
-        cityName.setText(place.getName());
+        TextView growthRate = findViewById(R.id.growthRate);
+        growthRate.setText("Growth Rate: " + place.getGrowthRate());
 
-        TextView cityCapacity = (TextView) findViewById(R.id.cityCapacity);
-        cityName.setText(place.getName());
+        TextView cityCapacity = findViewById(R.id.cityCapacity);
+        cityCapacity.setText("Max Capacity: " + place.getCapacity());
 
-        TextView meebleCount = (TextView) findViewById(R.id.meebleCount);
-        cityName.setText(place.getName());
+        meebleCount = findViewById(R.id.meebleCount);
+        meebleCount.setText("Population: " + place.getPopulation());
 
         updateChart(place.getPopulationHistory());
+        initButtons();
+    }
+
+    public void updatePopulation(int userId, int newPopulation) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("score", newPopulation);
+
+        db.collection("users")
+                .document(String.valueOf(userId))
+                .set(updates, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Population updated"))
+                .addOnFailureListener(e -> Log.d(TAG, "Failed to update population"));
     }
 
     @Override
@@ -94,5 +128,78 @@ public class NfcCityView extends AppCompatActivity {
         LineChart chart = findViewById(R.id.populationChart);
         chart.setData(new LineData(dataSet));
         chart.invalidate();
+    }
+
+    private void initButtons() {
+        EditText meebleInput = findViewById(R.id.meebleInput);
+        Button kidnapButton = findViewById(R.id.kidnapButton);
+        Button releaseButton = findViewById(R.id.releaseButton);
+
+        kidnapButton.setOnClickListener(v -> {
+            String input = meebleInput.getText().toString();
+            if (input.isEmpty()) {
+                Toast.makeText(this, "Enter a number first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int amount = Integer.parseInt(input);
+            int actualKidnapped = place.kidnap(amount);
+            user.setScore(user.getScore() + actualKidnapped);
+
+            System.out.println("USERID: " + USERID);
+            updatePopulation(USERID, amount);
+
+            meebleCount.setText("Meebles: " + place.getPopulation());
+            updateChart(place.getPopulationHistory());
+            Toast.makeText(this, "Kidnapped " + actualKidnapped + " meebles!", Toast.LENGTH_SHORT).show();
+            meebleInput.setText("");
+        });
+
+        releaseButton.setOnClickListener(v -> {
+            String input = meebleInput.getText().toString();
+            if (input.isEmpty()) {
+                Toast.makeText(this, "Enter a number first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int amount = Integer.parseInt(input);
+            if (amount > user.getScore()) {
+                Toast.makeText(this, "You only have " + user.getScore() + " meebles!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            place.release(amount);
+            user.setScore(user.getScore() - amount);
+
+            updatePopulation(USERID, user.getScore());
+
+            meebleCount.setText("Meebles: " + place.getPopulation());
+            updateChart(place.getPopulationHistory());
+            Toast.makeText(this, "Released " + amount + " meebles!", Toast.LENGTH_SHORT).show();
+            meebleInput.setText("");
+        });
+    }
+
+    //handles the chart, chart updates itself every 10 seconds.
+    private final Handler growthHandler = new Handler(Looper.getMainLooper());
+    private final Runnable growthRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (place != null) {
+                place.grow();
+                meebleCount.setText("Population: " + place.getPopulation());
+                updateChart(place.getPopulationHistory());
+            }
+            growthHandler.postDelayed(this, 10000);
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        growthHandler.postDelayed(growthRunnable, 10000);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        growthHandler.removeCallbacks(growthRunnable);
     }
 }
