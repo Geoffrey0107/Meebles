@@ -154,5 +154,18 @@
         android:layout_marginLeft="24dp"
         android:layout_marginRight="24dp" />
 
+    <ImageView
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/map"
+        android:contentDescription="map Image"
+        app:layout_constraintTop_toBottomOf="@id/guessResult"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:background="#EEEEEE"
+        android:padding="10dp"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

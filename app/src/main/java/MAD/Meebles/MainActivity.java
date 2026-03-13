@@ -154,7 +154,9 @@ public class MainActivity extends AppCompatActivity {
 
                                     "5. Be careful not to exceed the maximum capacity of a place!\n\n" +
 
-                                    "6. Try to grow as many meebles as possible before time runs out."
+                                    "6. Try to grow as many meebles as possible before time runs out\n\n" +
+
+                                    "7. When you are done, tap the exit button on the top left to delete user."
                     )
                     .setPositiveButton("Got it", null)
                     .show();
